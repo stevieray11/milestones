@@ -10,7 +10,7 @@ import (
 	"github.com/hajimehoshi/ebiten/ebitenutil"
 	"github.com/hajimehoshi/ebiten/text"
 	"bytes"
-	"github.com/hajimehoshi/ebiten/examples/resources/images"
+	"github.com/enjoykarma/milestones/src/images"
 	"log"
 	//"math/rand"
 	c "github.com/enjoykarma/milestones/config"

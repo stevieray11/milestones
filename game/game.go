@@ -9,7 +9,7 @@ import (
 	"github.com/hajimehoshi/ebiten/examples/resources/fonts"
 	"image"
 	"bytes"
-	"github.com/hajimehoshi/ebiten/examples/resources/images"
+	"github.com/enjoykarma/milestones/src/images"
 )
 
 type Game struct {

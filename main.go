@@ -11,7 +11,7 @@ import (
 	//"math/rand"
 	"github.com/hajimehoshi/ebiten"
 	//"github.com/hajimehoshi/ebiten/ebitenutil"
-	"github.com/hajimehoshi/ebiten/examples/resources/images"
+	"github.com/enjoykarma/milestones/src/images"
 	"github.com/hajimehoshi/ebiten/ebitenutil"
 	"github.com/enjoykarma/milestones/unit"
 	c "github.com/enjoykarma/milestones/config"
