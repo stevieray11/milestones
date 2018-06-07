@@ -112,7 +112,7 @@ func (p *Unit) IsDestinationOnBlockedArea(customCoords bool, x int, y int) bool{
 	
 }
 
-func (p *Unit) ChangeCoord(coordType string, target int) (r bool, moveType string){
+func (p *Unit) ChangeCoord(coordType string, target int) (r bool, moveType string, strafeChangedCoord int){
 	
 	var (
 		Xleft int
@@ -122,7 +122,10 @@ func (p *Unit) ChangeCoord(coordType string, target int) (r bool, moveType strin
 		changedCoord int
 	)
 
-	
+
+	strafeChangedCoord = 0
+
+
 
 	switch coordType {
 	case "X" :
@@ -144,14 +147,14 @@ func (p *Unit) ChangeCoord(coordType string, target int) (r bool, moveType strin
 					// fmt.Println(Xright)
 					// fmt.Println(rand.Intn(100000))
 					p.TerminateAction()
-					return false, ""
+					return false, "", strafeChangedCoord
 
 				} else {
 					if (p.DestinationY > p.CoordY) {
 						changedCoord = p.CoordY + p.Speed + c.PlayerSpaceFromBlockSize
 					} else if (p.DestinationY == p.CoordY) {
 						
-						return false, ""
+						return false, "", strafeChangedCoord
 						//changedCoord = p.CoordY + p.Speed + c.PlayerSpaceFromBlockSize
 					} else {
 						changedCoord = p.CoordY - p.Speed - c.PlayerSpaceFromBlockSize
@@ -162,17 +165,18 @@ func (p *Unit) ChangeCoord(coordType string, target int) (r bool, moveType strin
 						if (p.DestinationY > p.CoordY) {
 							changedCoord = p.CoordY + p.Speed
 						} else if (p.DestinationY == p.CoordY) {
-							return false, ""
+							return false, "", strafeChangedCoord
 							//changedCoord = p.CoordY - p.Speed
 						} else {
 							changedCoord = p.CoordY - p.Speed
 						}
-						p.CoordY = changedCoord
+						strafeChangedCoord = changedCoord
+						//p.CoordY = changedCoord
 						//p.ChangeCoord("Y", changedCoord)
-						return true, "strafe"
+						return true, "strafeY", strafeChangedCoord
 					}
 				
-					return false, ""
+					return false, "", strafeChangedCoord
 				}
 			}
 		}
@@ -197,14 +201,14 @@ func (p *Unit) ChangeCoord(coordType string, target int) (r bool, moveType strin
 				if (p.IsDestinationOnBlockedArea(false, 0, 0)){
 
 					p.TerminateAction()
-					return false, ""
+					return false, "", strafeChangedCoord
 
 				} else {
 
 					if (p.DestinationX > p.CoordX) {
 						changedCoord = p.CoordX + p.Speed + c.PlayerSpaceFromBlockSize
 					} else if (p.DestinationX == p.CoordX){
-						return false, ""
+						return false, "", strafeChangedCoord
 						//changedCoord = p.CoordX - p.Speed - c.PlayerSpaceFromBlockSize
 					} else {
 						changedCoord = p.CoordX - p.Speed - c.PlayerSpaceFromBlockSize
@@ -217,23 +221,23 @@ func (p *Unit) ChangeCoord(coordType string, target int) (r bool, moveType strin
 							changedCoord = p.CoordX + p.Speed
 						} else if (p.DestinationX == p.CoordX){
 							//changedCoord = p.CoordX - p.Speed
-							return false, ""
+							return false, "", strafeChangedCoord
 						} else {
-							changedCoord = p.CoordX - p.Speed
+							changedCoord = p.CoordX - p.Speed 
 						}
-
-						p.CoordX = changedCoord
+						
+						strafeChangedCoord = changedCoord
+						//p.CoordX = changedCoord
 						//p.ChangeCoord("X", changedCoord)
-						return true, "strafe"
+						return true, "strafeX", strafeChangedCoord
 					}
 					
-					return false, ""
+					return false, "", strafeChangedCoord
 
 				}
 
 			}
 		}
-
 		p.CoordY = target
 
 		break
@@ -243,7 +247,7 @@ func (p *Unit) ChangeCoord(coordType string, target int) (r bool, moveType strin
 		
 	}
 
-	return true, ""
+	return true, "", strafeChangedCoord
 }
 
 func (p *Unit) MoveTo(screen *ebiten.Image) bool {
@@ -254,7 +258,9 @@ func (p *Unit) MoveTo(screen *ebiten.Image) bool {
 	//var moved bool = false
 	var (
 		r bool
+		strafeChoord int
 		moveType string
+		moveCount int = 0
 	)
 	tileY := 0
 
@@ -262,6 +268,7 @@ func (p *Unit) MoveTo(screen *ebiten.Image) bool {
 	YDistance := 0
 
 	if (p.DestinationX != p.CoordX || p.DestinationY != p.CoordY) {
+		
 		if (p.DestinationX != p.CoordX ){
 			
 			if (p.CoordX > p.DestinationX ){
@@ -269,58 +276,106 @@ func (p *Unit) MoveTo(screen *ebiten.Image) bool {
 					p.CoordX = p.DestinationX
 					XDistance = 0
 				} else {
-					r, moveType = p.ChangeCoord("X", p.CoordX - p.Speed)
+					r, moveType, strafeChoord = p.ChangeCoord("X", p.CoordX - p.Speed)
 					if (!r) {
 						p.DrawStatic(screen, p.TileX, tileY, float64(p.CoordX), float64(p.CoordY))
 						return false
 					} else {
-						destinationX = "left"
-						XDistance = p.CoordX - p.DestinationX
-						//moved = true
+						
+						if (moveType == "strafeY") {
+							fmt.Println("strafeY")
+							r, _, _ = p.ChangeCoord("Y", strafeChoord)
+							if (!r) {
+								p.DrawStatic(screen, p.TileX, tileY, float64(p.CoordX), float64(p.CoordY))
+								return false
+							} else {
+								moveCount++
+							}
+						} else {
+							destinationX = "left"
+							XDistance = p.CoordX - p.DestinationX
+							moveCount++
+						}//moved = true
 					}
 					
 				}
 				
 			} else {
-				r, moveType = p.ChangeCoord("X", p.CoordX + p.Speed)
+				r, moveType, strafeChoord = p.ChangeCoord("X", p.CoordX + p.Speed)
 				if (!r) {
 					p.DrawStatic(screen, p.TileX, tileY, float64(p.CoordX), float64(p.CoordY))
 					return false
 				} else {
-					destinationX = "right"
-					XDistance = p.DestinationX - p.CoordX 
-					//moved = true
+					if (moveType == "strafeY") {
+						fmt.Println("strafeY")
+						r, _, _ = p.ChangeCoord("Y", strafeChoord)
+						if (!r) {
+							p.DrawStatic(screen, p.TileX, tileY, float64(p.CoordX), float64(p.CoordY))
+							return false
+						} else {
+							moveCount++
+						}
+					} else {
+						moveCount++
+						destinationX = "right"
+						XDistance = p.DestinationX - p.CoordX 
+					}//moved = true
 				}
 				
 				
 			}
 		}
-		if (p.DestinationY != p.CoordY && moveType != "strafe"){
+		if (p.DestinationY != p.CoordY) {
 			if (p.CoordY > p.DestinationY ){
 				if (p.Speed > p.CoordY) {
 					p.CoordY = p.DestinationY
 					YDistance = 0
 				} else {
-					r, moveType = p.ChangeCoord("Y", p.CoordY - p.Speed)
+					r, moveType, strafeChoord = p.ChangeCoord("Y", p.CoordY - p.Speed)
 					if (!r) {
 						p.DrawStatic(screen, p.TileX, tileY, float64(p.CoordX), float64(p.CoordY))
 						return false
 					} else {
-						destinationY = "down"
-						YDistance = p.CoordY - p.DestinationY
-					}
+						if (moveType == "strafeX") {
+							fmt.Println("strafeX")
+							r, _, _ = p.ChangeCoord("X", strafeChoord)
+							if (!r) {
+								p.DrawStatic(screen, p.TileX, tileY, float64(p.CoordX), float64(p.CoordY))
+								return false
+							} else {
+								moveCount++
+							}
+						} else {
+							moveCount++
+							destinationY = "down"
+							YDistance = p.CoordY - p.DestinationY
+						}
 
-					
+					}
 			}
+
 			} else {
 				
-				r, moveType = p.ChangeCoord("Y", p.CoordY + p.Speed)
+				r, moveType, strafeChoord = p.ChangeCoord("Y", p.CoordY + p.Speed)
 				if (!r) {
 					p.DrawStatic(screen, p.TileX, tileY, float64(p.CoordX), float64(p.CoordY))
 					return false
 				} else {
-					destinationY = "up"
-					YDistance = p.DestinationY - p.CoordY
+					if (moveType == "strafeX") {
+						fmt.Println("strafeX")
+						r, _, _ = p.ChangeCoord("X", strafeChoord)
+						if (!r) {
+							p.DrawStatic(screen, p.TileX, tileY, float64(p.CoordX), float64(p.CoordY))
+							return false
+						} else {
+							moveCount++
+						}
+					} else {
+						moveCount++
+						destinationY = "up"
+						YDistance = p.DestinationY - p.CoordY
+					}
+					
 				}
 
 				
@@ -354,7 +409,7 @@ func (p *Unit) MoveTo(screen *ebiten.Image) bool {
 		} 
 	}
 	//ebitenutil.DebugPrint(screen, fmt.Sprintf(strconv.Itoa(XDistance) + " : " + strconv.Itoa(YDistance)))
-
+	fmt.Println(moveCount)
 	p.DrawStatic(screen, p.TileX, tileY, float64(p.CoordX), float64(p.CoordY))
 
 	return true
