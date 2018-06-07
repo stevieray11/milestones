@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	//"strconv"
+	"strconv"
 	"bytes"
 	//"fmt"
 	"image"
@@ -12,7 +12,7 @@ import (
 	"github.com/hajimehoshi/ebiten"
 	//"github.com/hajimehoshi/ebiten/ebitenutil"
 	"github.com/hajimehoshi/ebiten/examples/resources/images"
-
+	"github.com/hajimehoshi/ebiten/ebitenutil"
 	"github.com/enjoykarma/milestones/unit"
 	c "github.com/enjoykarma/milestones/config"
 	g "github.com/enjoykarma/milestones/game"
@@ -23,7 +23,7 @@ import (
 
 var (
 	tilesImage *ebiten.Image
-	player1 = unit.Unit{"Player1", 100, 120, 120, 0, 1, 0, 0}
+	player1 = unit.Unit{"Player1", 100, 120, 120, 0, 1, 0, 0, []unit.Checkpoint{}}
 	unit1 = unit.Unit{}
 
 )
@@ -53,7 +53,7 @@ func init() {
 
 	
 
-	unit1 = unit.Unit{"Unit 1", 100, 120, 120, 0, 1, 0, 0}
+	unit1 = unit.Unit{"Unit 1", 100, 120, 120, 0, 1, 0, 0, []unit.Checkpoint{}}
 
 }
 
@@ -78,7 +78,7 @@ func update(screen *ebiten.Image) error {
 	g.ExecuteActions(screen)
 
 	
-	
+	ebitenutil.DebugPrint(screen, fmt.Sprintf(strconv.Itoa(player1.CoordX) + " : " + strconv.Itoa(player1.CoordY) + "\n" + strconv.Itoa(player1.DestinationX) + " : " + strconv.Itoa(player1.DestinationY)))
 
 	return nil
 }
