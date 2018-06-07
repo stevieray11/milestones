@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"image"
 	"math/rand"
+	"bytes"
 	// u "github.com/enjoykarma/milestones/unit"
 	c "github.com/enjoykarma/milestones/config"
 	g "github.com/enjoykarma/milestones/game"
 	"github.com/hajimehoshi/ebiten"
+	"github.com/enjoykarma/milestones/src/images"
 )
 var (
 	GameMapLayer1 Layer
@@ -63,6 +65,27 @@ func (a *Area) IsBlockedArea() bool {
 		return true
 	}
 	return false
+}
+
+func (a *Area) GetCenterPoint() (X int, Y int) { 
+	return int(a.X) - (int(c.TileSize) /2), int(a.Y) + (int(c.TileSize) /2)
+}
+
+func (a *Area) IsCoordsInArea(x int, y int) bool {
+	if ( (x >= (int(a.X) - int(c.TileSize)) && x <= int(a.X) ) && (y >= int(a.Y) && y <= (int(a.Y) + int(c.TileSize))) ) {
+		return true
+	}
+	return false
+}
+
+func (a * Area) Mark(screen *ebiten.Image) {
+		//=============
+		img, _, _ := image.Decode(bytes.NewReader(images.Cursor_png))	
+		ebitenImage, _ := ebiten.NewImageFromImage(img, ebiten.FilterDefault)
+		//=============
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(a.X - 16, a.Y)
+		screen.DrawImage(ebitenImage, op)
 }
 
 // {Area{0, 0, 0}, Area{1, 0, 0}, Area{0, 0, 0}},

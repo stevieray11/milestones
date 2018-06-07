@@ -369,15 +369,36 @@ func (p *Unit) DrawAnimation(destinationX string, destinationY string, XDistance
 }
 
 
-func (u *Unit) GenerateRoute() {
+func (u *Unit) GenerateRoute(screen *ebiten.Image) {
 	if (u.DestinationX > 0 || u.DestinationY > 0){
-		u.Route = []Checkpoint{
-			{1, 0},
-			{2, 0},
+		var PointA = Checkpoint{u.CoordX, u.CoordY}
+		//var PointB = Checkpoint{}
+
+		
+	
+
+		u.Route = []Checkpoint{PointA}
+
+		for _, a := range m.GameMapLayer2{
+			if (a.IsBlockedArea()) {
+				continue
+			}
+			
+
+			
+
+			//x, y := a.GetCenterPoint()
+			
+			if (a.IsCoordsInArea(PointA.X + int(c.TileSize),  PointA.Y)){
+				a.Mark(screen)
+			}			
+			
+			
 		}
 		
 	}
 }
+
 
 
 func (u *Unit) ExecuteActionsUnit(screen *ebiten.Image) {
@@ -404,7 +425,7 @@ func (u *Unit) ExecuteActionsPlayer1(screen *ebiten.Image) {
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 	
 		u.DestinationX, u.DestinationY = ebiten.CursorPosition()
-		u.GenerateRoute()
+		u.GenerateRoute(screen)
 		u.MoveTo(screen)
 		ebitenutil.DebugPrint(screen, fmt.Sprintf("\n\n x: " + strconv.Itoa(u.DestinationX) + "y: " +  strconv.Itoa(u.DestinationY) ))
 		//ebitenutil.DebugPrint(screen, fmt.Sprintf("FPS: %0.2f", ebiten.CurrentFPS()))
