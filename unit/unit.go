@@ -78,7 +78,9 @@ func (p *Unit) MovementPossibility() bool{
 }
 
 func (p *Unit) TerminateAction(){
-	
+
+
+	fmt.Println("action Terminated")
 	p.DestinationX = 0
 	p.DestinationY = 0
 }
@@ -104,9 +106,9 @@ func (p *Unit) IsDestinationOnBlockedArea(customCoords bool, x int, y int) bool{
 		if (a.IsBlockedArea() && (y >= Ytop && y <= Ybottom ) && (x >= Xleft && x <= Xright)){
 			
 			if (customCoords) {
-				//fmt.Println("CUSTOM DESTINATION ON BLOCKED!!!")
+				fmt.Println("CUSTOM DESTINATION ON BLOCKED!!!")
 			} else {
-				//fmt.Println("PLAYER DESTINATION ON BLOCKED!!!")
+				fmt.Println("PLAYER DESTINATION ON BLOCKED!!!")
 			}
 			
 
@@ -198,7 +200,7 @@ func (p *Unit) GetDistanceToTarget(coordType string) (distance int) {
 
 		break
 	}
-
+	
 	return distance
 }
 
@@ -369,34 +371,106 @@ func (p *Unit) DrawAnimation(destinationX string, destinationY string, XDistance
 }
 
 
-func (u *Unit) GenerateRoute(screen *ebiten.Image) {
+func getNextCheckpointRecursive(routesIn []Checkpoint, start m.Area, u *Unit) ([]Checkpoint) {
+
+
+	if (start.IsBlockedArea() ){
+		return routesIn
+	}
+
+
+	left := start.LeftArea()
+	right := start.RightArea()
+	up := start.UpArea()
+	down := start.DownArea()
+
+	var dist float64
+	var minDist float64
+	var startDist float64
+	var nextArea m.Area
+
+	startX, startY := start.GetCenterPointFloat64()
+
+	fmt.Println("start-", start, " R-", right, " L-", left, " D-", down, " U-", up )
+	startDist = start.GetDistanceTo(float64(u.DestinationX), float64(u.DestinationY))	
+	minDist = right.GetDistanceTo(float64(u.DestinationX), float64(u.DestinationY))	
+	fmt.Println("dist START ", startDist)
+	fmt.Println("dist R ", minDist)
+	if (right.IsCloserToDestination(startX, startY, float64(u.DestinationX), float64(u.DestinationY)) && !right.IsBlockedArea() ) {
+		//x, y := right.GetCenterPoint()
+		//routesIn = append(routesIn, Checkpoint{int(x), int(y)})
+		nextArea = right
+		fmt.Println("possible right")
+	}
+
+
+	dist = up.GetDistanceTo(float64(u.DestinationX), float64(u.DestinationY))
+	fmt.Println("dist U", dist)
+	if (up.IsCloserToDestination(startX, startY, float64(u.DestinationX), float64(u.DestinationY)) && !up.IsBlockedArea() ) {
+		if (dist < minDist && dist > 0) {
+			minDist = dist
+			nextArea = up
+			fmt.Println("possible up")
+		}
+	}
+
+	dist = down.GetDistanceTo(float64(u.DestinationX), float64(u.DestinationY))
+	fmt.Println("dist D", dist)
+	if (down.IsCloserToDestination(startX, startY, float64(u.DestinationX), float64(u.DestinationY)) && !down.IsBlockedArea() ) {			
+		if (dist < minDist && dist > 0) {
+			minDist = dist
+			nextArea = down
+			fmt.Println("possible down")
+		}
+	}
+
+	dist = left.GetDistanceTo(float64(u.DestinationX), float64(u.DestinationY))
+	fmt.Println("dist L", dist)
+	if (left.IsCloserToDestination(startX, startY, float64(u.DestinationX), float64(u.DestinationY)) && !left.IsBlockedArea() ) {
+		if (dist < minDist && dist > 0) {
+			nextArea = left
+			fmt.Println("possible left")
+		}
+	}
+	
+
+
+
+	if (nextArea.IsCoordsInArea(u.DestinationX, u.DestinationY)) {
+		fmt.Println("finish")
+		return routesIn
+	}
+
+	fmt.Println("min Dist", minDist)
+	// fmt.Println(nextArea)
+	if (minDist > 0 && nextArea != m.Area{}){
+		x, y := nextArea.GetCenterPoint()
+		routesIn = append(routesIn, Checkpoint{int(x), int(y)})
+		routesIn = getNextCheckpointRecursive(routesIn, nextArea, u)
+	}
+	
+
+	return routesIn
+}
+
+func (u *Unit) GenerateRoute(screen *ebiten.Image) bool {
 	if (u.DestinationX > 0 || u.DestinationY > 0){
 		var PointA = Checkpoint{u.CoordX, u.CoordY}
 		//var PointB = Checkpoint{}
 
-		
-	
+		if (u.IsDestinationOnBlockedArea(false, 0, 0)){
+			u.TerminateAction()
+			return false
+		}
 
 		u.Route = []Checkpoint{PointA}
+		u.Route = getNextCheckpointRecursive(u.Route, m.GetAreaByCoords(u.CoordX, u.CoordY), u)
 
-		for _, a := range m.GameMapLayer2{
-			if (a.IsBlockedArea()) {
-				continue
-			}
-			
 
-			
-
-			//x, y := a.GetCenterPoint()
-			
-			if (a.IsCoordsInArea(PointA.X + int(c.TileSize),  PointA.Y)){
-				a.Mark(screen)
-			}			
-			
-			
-		}
-		
 	}
+
+	return false
+
 }
 
 
@@ -405,16 +479,22 @@ func (u *Unit) ExecuteActionsUnit(screen *ebiten.Image) {
 	
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonRight) {
 	
-		u.DestinationX, u.DestinationY = ebiten.CursorPosition()
-		u.MoveTo(screen)
-		//ebitenutil.DebugPrint(screen, fmt.Sprintf("\n\n x: " + strconv.Itoa(unit1.DestinationX) + "y: " +  strconv.Itoa(unit1.DestinationY) ))
+
+		
+		
+		X, Y := ebiten.CursorPosition()
+		a := m.GetAreaByCoords(X, Y)
+
+		ebitenutil.DebugPrint(screen, fmt.Sprintf("\n\n type: " + strconv.Itoa(a.Type) + "x: " +  strconv.Itoa(int(a.X)) + "y:" + strconv.Itoa(int(a.Y)) ))
+		//u.MoveTo(screen)
+		
 		//ebitenutil.DebugPrint(screen, fmt.Sprintf("FPS: %0.2f", ebiten.CurrentFPS()))
 	} else if (u.DestinationX > 0 || u.DestinationY > 0){ 
-		u.MoveTo(screen)
+		//u.MoveTo(screen)
 		
 		//ebitenutil.DebugPrint(screen, fmt.Sprintf("FPS: %0.2f", ebiten.CurrentFPS()))
 	} else {
-		u.DrawStatic(screen, 0, 0, float64(u.CoordX), float64(u.CoordY))
+		//u.DrawStatic(screen, 0, 0, float64(u.CoordX), float64(u.CoordY))
 	}
 	
 
@@ -426,16 +506,39 @@ func (u *Unit) ExecuteActionsPlayer1(screen *ebiten.Image) {
 	
 		u.DestinationX, u.DestinationY = ebiten.CursorPosition()
 		u.GenerateRoute(screen)
+		fmt.Println(u.Route)
 		u.MoveTo(screen)
-		ebitenutil.DebugPrint(screen, fmt.Sprintf("\n\n x: " + strconv.Itoa(u.DestinationX) + "y: " +  strconv.Itoa(u.DestinationY) ))
+		//ebitenutil.DebugPrint(screen, fmt.Sprintf("\n\n x: " + strconv.Itoa(u.DestinationX) + "y: " +  strconv.Itoa(u.DestinationY) ))
 		//ebitenutil.DebugPrint(screen, fmt.Sprintf("FPS: %0.2f", ebiten.CurrentFPS()))
 	} else if (u.DestinationX > 0 || u.DestinationY > 0){ 
-		fmt.Println(u)
+		fmt.Println(u.Route)
+		
 		u.MoveTo(screen)
 		//ebitenutil.DebugPrint(screen, fmt.Sprintf("FPS: %0.2f", ebiten.CurrentFPS()))
 	} else {
 		u.DrawStatic(screen, 0, 0, float64(u.CoordX), float64(u.CoordY))
 	}
+
+	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonRight) {
+		u.TerminateAction()
+	}
+
+	u.DrawRoute(screen)
+
+}
+
+
+func (u *Unit) DrawRoute(screen *ebiten.Image) {
 	
+	for _, cp := range u.Route {
+		for _, a := range m.GameMapLayer2{
+			if (a.IsBlockedArea()) {
+				continue
+			}
+			if (a.IsCoordsInArea(cp.X, cp.Y) ) {
+				a.Mark(screen)
+			}
+		}
+	}
 
 }

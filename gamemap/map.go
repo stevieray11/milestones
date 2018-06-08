@@ -1,12 +1,12 @@
 package gamemap
 
 import (
+	"math"
 
-	"fmt"
+	//"fmt"
 	"image"
 	"math/rand"
 	"bytes"
-	// u "github.com/enjoykarma/milestones/unit"
 	c "github.com/enjoykarma/milestones/config"
 	g "github.com/enjoykarma/milestones/game"
 	"github.com/hajimehoshi/ebiten"
@@ -58,6 +58,43 @@ var (
 )
 
 
+func GetAreaByCoords(x int, y int) (a Area) {
+	for _, a := range GameMapLayer2{
+		if (a.IsBlockedArea()) {
+			continue
+		}
+		if (a.IsCoordsInArea(x, y) ) {
+			return a
+		}
+	}
+	return a
+}
+
+
+func (a *Area) LeftArea() (al Area){
+	x := (a.X - c.TileSize) - (c.TileSize / 2)
+	y := a.Y + (c.TileSize / 2)
+	return GetAreaByCoords(int(x), int(y))
+}
+
+func (a *Area) RightArea() (al Area){
+	x := (a.X + c.TileSize) - (c.TileSize / 2)
+	y := a.Y + (c.TileSize / 2)
+	return GetAreaByCoords(int(x), int(y))
+}
+
+func (a *Area) UpArea() (al Area){
+	x := a.X - (c.TileSize / 2)
+	y := a.Y - (c.TileSize / 2)
+	return GetAreaByCoords(int(x), int(y))
+}
+
+func (a *Area) DownArea() (al Area){
+	x := a.X - (c.TileSize / 2)
+	y := a.Y + c.TileSize + (c.TileSize / 2)
+	return GetAreaByCoords(int(x), int(y))
+}
+
 
 
 func (a *Area) IsBlockedArea() bool {
@@ -71,10 +108,37 @@ func (a *Area) GetCenterPoint() (X int, Y int) {
 	return int(a.X) - (int(c.TileSize) /2), int(a.Y) + (int(c.TileSize) /2)
 }
 
+func (a *Area) GetCenterPointFloat64() (X float64, Y float64) { 
+	return a.X - (c.TileSize /2), a.Y + (c.TileSize /2)
+}
+
 func (a *Area) IsCoordsInArea(x int, y int) bool {
-	if ( (x >= (int(a.X) - int(c.TileSize)) && x <= int(a.X) ) && (y >= int(a.Y) && y <= (int(a.Y) + int(c.TileSize))) ) {
+	if ( ( (x > (int(a.X) - int(c.TileSize))) && (x < int(a.X)) ) && ( (y > int(a.Y)) && (y < (int(a.Y) + int(c.TileSize) )) ) ) {
 		return true
 	}
+	return false
+}
+
+func (a *Area) GetDistanceTo(bX float64, bY float64) float64 {
+	
+	aX, aY := a.GetCenterPointFloat64()
+	return math.Sqrt(math.Pow(bX - aX, 2) + math.Pow(bY - aY, 2))
+}
+
+func (a *Area) IsCloserToDestination(bX float64, bY float64, DestinationX float64, DestinationY float64) bool {
+	
+	aX, aY := a.GetCenterPointFloat64()
+
+	Da := math.Sqrt(math.Pow(DestinationX - aX, 2) + math.Pow(DestinationY - aY, 2))
+	Db := math.Sqrt(math.Pow(DestinationX - bX, 2) + math.Pow(DestinationY - bY, 2))
+	//fmt.Println(Da)
+	//fmt.Println(Db)
+	if (Da < Db) {
+		//fmt.Println(a.X, a.Y, bX, bY, "a is closer than b", Da, Db)
+	
+		return true
+	}
+	
 	return false
 }
 
@@ -107,7 +171,7 @@ func GenerateGameMap(types [6]int) (layer Layer){
 	tilesCountX = c.ScreenWidth / int(c.TileSize)
 	tilesCountY = c.ScreenHeight / int(c.TileSize)
 
-	fmt.Print(tilesCount)
+	//fmt.Print(tilesCount)
 	
 	
 	return layer

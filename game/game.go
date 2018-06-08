@@ -53,7 +53,8 @@ func ExecuteActions(screen *ebiten.Image) {
 		screen.DrawImage(ebitenImage, op)
 	}
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonRight) {
-		
+		// x, y := ebiten.CursorPosition()
+
 	}
 
 }
