@@ -10,6 +10,7 @@ import (
 	"image"
 	"bytes"
 	"github.com/enjoykarma/milestones/src/images"
+	//c "github.com/enjoykarma/milestones/config"
 )
 
 type Game struct {
@@ -18,11 +19,13 @@ type Game struct {
 	PlayerDestinationY int
 	Font font.Face
 	EventRegistry []string
+	CameraX float64
+	CameraY float64
 
 }
 
 var (
-	Game1 = Game{0, 0, nil, nil}
+	Game1 = Game{0, 0, nil, nil, 0, 0}
 )
 
 func InitGame() {
@@ -36,6 +39,10 @@ func InitGame() {
 			DPI:     72,
 			Hinting: font.HintingFull,
 		})
+		Game1.CameraX = 0
+		Game1.CameraY = 0
+
+		
 }
 
 func ExecuteActions(screen *ebiten.Image) {
@@ -85,4 +92,19 @@ func GetImage(imageName string) (EImage *ebiten.Image) {
 
 	return EImage
 
+}
+
+
+func (g *Game) CameraMoveLeft() {
+	g.CameraX--
+
+}
+func (g *Game) CameraMoveRight() {
+	g.CameraX++
+}
+func (g *Game) CameraMoveUp() {
+	g.CameraY--
+}
+func (g *Game) CameraMoveDown() {
+	g.CameraY++
 }

@@ -113,7 +113,7 @@ func (a *Area) GetCenterPointFloat64() (X float64, Y float64) {
 }
 
 func (a *Area) IsCoordsInArea(x int, y int) bool {
-	if ( ( (x > (int(a.X) - int(c.TileSize))) && (x < int(a.X)) ) && ( (y > int(a.Y)) && (y < (int(a.Y) + int(c.TileSize) )) ) ) {
+	if ( ( (x >= (int(a.X) - int(c.TileSize))) && (x <= int(a.X)) ) && ( (y >= int(a.Y)) && (y <= (int(a.Y) + int(c.TileSize) )) ) ) {
 		return true
 	}
 	return false
@@ -192,7 +192,7 @@ func (GameMapLayer *Layer) DrawLevelMapLayer(screen *ebiten.Image){
 	for i, a := range *GameMapLayer {
 		
 		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(cursorX, cursorY)
+		op.GeoM.Translate(cursorX - g.Game1.CameraX, cursorY - g.Game1.CameraY)
 		tileX = TypesAndTilesCoords[a.Type][0]
 		tileY = TypesAndTilesCoords[a.Type][1]
 		r := image.Rect(tileX, tileY, tileX+int(c.TileSize), tileY+int(c.TileSize))

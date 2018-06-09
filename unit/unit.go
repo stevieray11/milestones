@@ -20,6 +20,9 @@ import (
 
 var (
 	playerImage *ebiten.Image
+	currentCheckpointIndex int = 0
+	destArea m.Area
+	currentArea m.Area
 )
 
 type Unit struct {
@@ -46,7 +49,7 @@ func (p *Unit) DrawStatic(screen *ebiten.Image, tileX int, tileY int, positionX 
 	positionX = positionX - (c.PlayertileWidth/2)
 	positionY = positionY - (c.PlayertileHeight/2)
 
-	op.GeoM.Translate(positionX, positionY)
+	op.GeoM.Translate(positionX - g.Game1.CameraX, positionY - g.Game1.CameraY)
 
 	sx := tileX * int(c.PlayertileWidth)
 	sy := tileY * int(c.PlayertileHeight)
@@ -54,6 +57,7 @@ func (p *Unit) DrawStatic(screen *ebiten.Image, tileX int, tileY int, positionX 
 	r := image.Rect(sx, sy, sx+int(c.PlayertileWidth), sy+int(c.PlayertileHeight))
 	op.SourceRect = &r
 	screen.DrawImage(playerImage, op)
+	
 	// fmt.Print(g.Game1)
 	
 	text.Draw(screen, p.Name, g.Game1.Font, int(positionX) - 10, int(positionY), color.White)
@@ -83,6 +87,7 @@ func (p *Unit) TerminateAction(){
 	fmt.Println("action Terminated")
 	p.DestinationX = 0
 	p.DestinationY = 0
+	p.Route = []Checkpoint{}
 }
 
 func (p *Unit) IsDestinationOnBlockedArea(customCoords bool, x int, y int) bool{
@@ -142,6 +147,7 @@ func (p *Unit) ChangeCoord(coordType string, target int) (r bool){
 			if (a.IsBlockedArea() && (target >= Xleft && target <= Xright) && (p.CoordY >= Ytop && p.CoordY <= Ybottom) ) {
 				if (p.IsDestinationOnBlockedArea(false, 0, 0)){
 					p.TerminateAction()
+					fmt.Println("DestinationOnBlockedArea X")
 				}
 				return false
 			}
@@ -161,6 +167,7 @@ func (p *Unit) ChangeCoord(coordType string, target int) (r bool){
 			if (a.IsBlockedArea() && (target >= Ytop && target <= Ybottom ) && (p.CoordX >= Xleft && p.CoordX <= Xright)){
 				if (p.IsDestinationOnBlockedArea(false, 0, 0)){
 					p.TerminateAction()
+					fmt.Println("DestinationOnBlockedArea Y")
 				}
 				return false	
 			}
@@ -213,7 +220,8 @@ func (p *Unit) MoveLeft() (r bool, distanceToTarget int) {
 	}
 	
 	r = p.ChangeCoord("X", p.CoordX - p.Speed)
-
+	
+	p.CameraMoveLeft()
 	// fmt.Println("MoveLeft")
 	// fmt.Println(rand.Intn(10000000))
 	// fmt.Println(p.IsDestinationOnBlockedArea(false, 0, 0))
@@ -233,7 +241,8 @@ func (p *Unit) MoveRight() (r bool, distanceToTarget int) {
 	}
 	
 	r = p.ChangeCoord("X", p.CoordX + p.Speed)
-
+	
+	p.CameraMoveRight()
 	// fmt.Println("MoveRight")
 	// fmt.Println(rand.Intn(10000000))
 	// fmt.Println(p.IsDestinationOnBlockedArea(false, 0, 0))
@@ -248,12 +257,15 @@ func (p *Unit) MoveDown() (r bool, distanceToTarget int) {
 
 		
 	if (p.IsDestinationOnBlockedArea(true, p.CoordX, p.CoordY + p.Speed + c.PlayerSpaceFromBlockSize)){
-		p.TerminateAction()
+		//p.TerminateAction()
+		fmt.Println("termination was here")
 		return false, 0
 	}
 
 	r = p.ChangeCoord("Y", p.CoordY + p.Speed)
 
+	p.CameraMoveDown()
+	
 	// fmt.Println("MoveDown")
 	// fmt.Println(r)
 	// fmt.Println(rand.Intn(10000000))
@@ -267,7 +279,8 @@ func (p *Unit) MoveDown() (r bool, distanceToTarget int) {
 func (p *Unit) MoveUp() (r bool, distanceToTarget int) {
 
 	if (p.IsDestinationOnBlockedArea(true, p.CoordX, p.CoordY - p.Speed - c.PlayerSpaceFromBlockSize)){
-		p.TerminateAction()
+		//p.TerminateAction()
+		fmt.Println("termination was here")
 		return false, 0
 	}
 
@@ -277,8 +290,9 @@ func (p *Unit) MoveUp() (r bool, distanceToTarget int) {
 	// fmt.Println("MoveUp")
 	// fmt.Println(rand.Intn(10000000))
 	// fmt.Println(p.IsDestinationOnBlockedArea(false, 0, 0))
-
-
+	
+	p.CameraMoveUp()
+	
 	return r, p.GetDistanceToTarget("Y")
 
 } 
@@ -327,10 +341,12 @@ func (p *Unit) MoveTo(screen *ebiten.Image) bool {
 		// fmt.Println(p.DestinationY)
 
 	} else {
+		fmt.Println("Term1 MoveTo")
 		p.TerminateAction()
 	}
 	
 	if (terminate){
+		fmt.Println("Term2 MoveTo")
 		p.TerminateAction()
 	}
 	
@@ -438,7 +454,7 @@ func getNextCheckpointRecursive(routesIn []Checkpoint, start m.Area, u *Unit) ([
 
 	if (nextArea.IsCoordsInArea(u.DestinationX, u.DestinationY)) {
 		fmt.Println("finish")
-		return routesIn
+		//return routesIn
 	}
 
 	fmt.Println("min Dist", minDist)
@@ -473,6 +489,23 @@ func (u *Unit) GenerateRoute(screen *ebiten.Image) bool {
 
 }
 
+func (u *Unit) UpdateDestination() {
+
+	
+
+	// destArea = m.GetAreaByCoords(u.DestinationX, u.DestinationY)
+	// currentArea = m.GetAreaByCoords(u.CoordX, u.CoordY)
+
+	if ( (u.DestinationX == u.CoordX) && (u.DestinationY == u.CoordY) ){
+		if (len(u.Route) > (currentCheckpointIndex + 1)) {
+			u.DestinationX = u.Route[currentCheckpointIndex + 1].X
+			u.DestinationY = u.Route[currentCheckpointIndex + 1].Y
+			fmt.Println("update route", currentCheckpointIndex)
+			currentCheckpointIndex++
+		}
+	}
+}
+
 
 
 func (u *Unit) ExecuteActionsUnit(screen *ebiten.Image) {
@@ -502,16 +535,31 @@ func (u *Unit) ExecuteActionsUnit(screen *ebiten.Image) {
 
 func (u *Unit) ExecuteActionsPlayer1(screen *ebiten.Image) {
 	
+	//u.UpdateDestination()
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 	
-		u.DestinationX, u.DestinationY = ebiten.CursorPosition()
-		u.GenerateRoute(screen)
-		fmt.Println(u.Route)
+		x, y := ebiten.CursorPosition()
+		
+		u.DestinationX = x + int(g.Game1.CameraX)
+		u.DestinationY = y + int(g.Game1.CameraY)
+		
+		// u.GenerateRoute(screen)
+		// if (len(u.Route) > 1) {
+		// 	u.DestinationX = u.Route[1].X
+		// 	u.DestinationY = u.Route[1].Y
+		// 	currentCheckpointIndex = 1
+		// } 
+		
+
+		//u.UpdateDestination()
+		//fmt.Println(u.Route)
 		u.MoveTo(screen)
+
+		fmt.Println(u.Route)
 		//ebitenutil.DebugPrint(screen, fmt.Sprintf("\n\n x: " + strconv.Itoa(u.DestinationX) + "y: " +  strconv.Itoa(u.DestinationY) ))
 		//ebitenutil.DebugPrint(screen, fmt.Sprintf("FPS: %0.2f", ebiten.CurrentFPS()))
 	} else if (u.DestinationX > 0 || u.DestinationY > 0){ 
-		fmt.Println(u.Route)
+		//
 		
 		u.MoveTo(screen)
 		//ebitenutil.DebugPrint(screen, fmt.Sprintf("FPS: %0.2f", ebiten.CurrentFPS()))
@@ -523,7 +571,7 @@ func (u *Unit) ExecuteActionsPlayer1(screen *ebiten.Image) {
 		u.TerminateAction()
 	}
 
-	u.DrawRoute(screen)
+	//u.DrawRoute(screen)
 
 }
 
@@ -541,4 +589,39 @@ func (u *Unit) DrawRoute(screen *ebiten.Image) {
 		}
 	}
 
+}
+
+
+func (u *Unit) CameraMoveLeft() {
+	g.Game1.CameraX--
+	//u.DestinationX += int(g.Game1.CameraX)
+	
+	// for _, r := range u.Route {
+	// 	(r).X += int(g.Game1.CameraX)
+	// }
+
+}
+func (u *Unit) CameraMoveRight() {
+	g.Game1.CameraX++
+	//u.DestinationX += int(g.Game1.CameraX)
+
+	// for _, r := range u.Route {
+	// 	(r).X += int(g.Game1.CameraX)
+	// }
+}
+func (u *Unit) CameraMoveUp() {
+	g.Game1.CameraY--
+	//u.DestinationY += int(g.Game1.CameraY)
+
+	// for _, r := range u.Route {
+	// 	(r).Y += int(g.Game1.CameraY)
+	// }
+}
+func (u *Unit) CameraMoveDown() {
+	g.Game1.CameraY++
+	//u.DestinationY += int(g.Game1.CameraY)
+
+	// for _, r := range u.Route {
+	// 	(r).X += int(g.Game1.CameraY)
+	// }
 }
